@@ -1,5 +1,5 @@
 
-# Sentiment analysis of cryptocurrency news headline using a finetuned Distilbert Model.
+# Sentiment Analysis of Cryptocurrency News Headline using a Fine-Tuned Distilbert Model.
 
     
 
