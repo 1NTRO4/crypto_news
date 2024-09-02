@@ -1,13 +1,44 @@
 
-This project performs sentiment analysis on the crypocurrency news headline Dataset using advanced deep learning techniques.
+# Sentiment analysis of cryptocurrency news headline using a finetuned Distilbert Model.
 
-### About
+    
+
+## About
 In this Project I intend confirming my hypothesis that distilBERT an optimised version of BERT is best suited for sentiment analysis in Finance with a focus in cryptocurrency based News headline
 
 I constructed a cryptocurrency based dictionary that is made of the top 200 crypto currencies and their abbreviations according to thier market capitalization. 192 crypto exchanges also made the list. This dictionary was then used to identify crypto currency entities from news headlines datasets and their sentiments determined using. Textblob. DistilBERT,FinBERT, RoBERTa and BERT models were then fine tuned using this dataset with their performance evaluated.  DistilBERT performed best here and was then used for sentiment analysis using streamlit web interface.
 
-### Contributors
-Terdoo M. Dugeri
+
+## Testing the model
+streamlit app interface is used to test the model.
+
+To run this model take note of the following steps
+
+- Clone the repo
+
+```
+git clone https://github.com/1NTRO4/crypto_news
+cd crypto_news
+```
+
+- Download the ready finetuned model from [google drive ]()link into [saved_models](streamlit_app/saved_models/)  folder
+
+- Setup a virtual enviroment
+
+- Install the packages
+
+```
+pip install -r requirements.txt
+```
+
+- Launch sentiment analysis streamlit app
+
+```
+streamlit run streamlit_app/app.py
+```
+
+
+
 
 ### Data
 
@@ -35,6 +66,10 @@ They are trained for 7 epochs with a batch size of 16.
 
 the model_training.py file is where the models are trained and saved.
 
+
+
+
+
 ### Directory
 1- AnnotatedDictionary-  folder contains the dictionary  "  annotataion_dict.json " used in the crypto currency labelling task.  The source used in scraping the web for top cryptocurrencies, exchanges and abbreviations  is the "scrapping_crypto_news.py"
 
@@ -56,6 +91,11 @@ Classification reports are printed showing precision, recall and F1 for each sen
 ### Results
 The DistilBERT showed better performance compared to the other models accuracy of 85% and F1 of 0.75 
 There is still room for improvement by using more increasing the size of the training data, and increasing the list entities used in the dataset, more  diverse source of news data and regularization techniques.
+
+
+
+### Contributors
+Terdoo M. Dugeri
 
 
 
