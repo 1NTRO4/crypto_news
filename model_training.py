@@ -112,7 +112,7 @@ def train_and_log_model(model_name, model_class, train_headlines, val_headlines,
     eval_result = trainer.evaluate()
 
     # Save the model
-    save_dir = './saved_models'  # Define the save directory here
+    save_dir = '.streamlit_app/saved_models'  # Define the save directory here
     model_save_path = os.path.join(save_dir, model_name)
     model.save_pretrained(model_save_path)
     tokenizer.save_pretrained(model_save_path)
@@ -256,7 +256,7 @@ def train_model(model, train_dataset, val_dataset, criterion, optimizer, epochs=
         val_loss, val_acc, val_precision, val_recall, val_f1 = evaluate_model(model, val_loader, criterion)
         print(f"Epoch: {epoch+1}, Training Loss: {total_loss/len(train_loader):.4f}, Validation Loss: {val_loss:.4f}, Accuracy: {val_acc:.4f}, Precision: {val_precision:.4f}, Recall: {val_recall:.4f}, F1 Score: {val_f1:.4f}")
     
-    save_dir = './saved_models'  # Define the save directory here
+    save_dir = '.streamlit_app/saved_models'  # Define the save directory here
     model_save_path = os.path.join(save_dir, 'lstm_model.pth')
     torch.save(model.state_dict(), model_save_path)
 
