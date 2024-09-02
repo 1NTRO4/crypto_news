@@ -1,0 +1,135 @@
+import pandas as pd
+import nltk
+from nltk.corpus import stopwords
+import re
+import string
+import json
+from textblob import TextBlob
+
+# Download NLTK data - run only once to download necessary NLTK packages
+# nltk.download('punkt')
+# nltk.download('stopwords')
+# nltk.download('wordnet')
+# nltk.download('punkt_tab')
+
+
+def load_data(filename):
+    # Load data from a CSV file into a pandas DataFrame
+    return pd.read_csv(filename)
+
+
+# Clean and tokenize the data
+def preprocess_text(text):
+    # Convert text to lowercase
+    text = text.lower()
+    # Remove punctuation from the text
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    # Remove symbols (except alphanumeric)
+    text = re.sub(r'[^\w]', ' ', text)
+    # Remove numbers from the text
+    text = ''.join([i for i in text if not i.isdigit()])
+    # Remove single characters (e.g., 'k')
+    text = re.sub(r"\b\w\b", "", text)
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    # Remove special characters
+    text = re.sub(r'\W', ' ', text)
+    # Tokenize the text into words
+    tokens = nltk.word_tokenize(text)
+    # Remove stopwords from the list of tokens
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word not in stop_words]
+    return tokens
+
+
+# Apply text preprocessing to a specific column in a DataFrame
+def preprocess_dataframe(df, text_column, new_column):
+    # Create a new column with tokenized and cleaned text
+    df[new_column] = df[text_column].apply(preprocess_text)
+    return df
+
+
+# Join tokenized data back into a single string
+def join_tokens(tokens):
+    # Convert a list of tokens back into a single string
+    return ' '.join(tokens)
+
+
+def load_json(filename):
+    # Load JSON data from a file
+    with open(filename, 'r') as f:
+        entity_dict = json.load(f)
+    return entity_dict
+
+
+def ner_on_text(text, entity_dict):
+    # Perform Named Entity Recognition (NER) on a single text
+    entities = []
+    words = text.split()  # Split text into words
+
+    for word in words:
+        word_lower = word.lower()  # Convert word to lowercase for case-insensitive matching
+        if word_lower in entity_dict:
+            start = text.lower().find(word_lower)  # Find the starting index of the entity
+            end = start + len(word)  # Calculate the ending index of the entity
+            entities.append({
+                "text": text[start:end],  # Extract the entity text
+                "label": entity_dict[word_lower],  # Get the label from the entity dictionary
+                "start_char": start,  # Starting character index
+                "end_char": end,  # Ending character index
+            })
+
+    return entities
+
+
+# Apply NER to a specific column in a DataFrame
+def ner_on_dataframe(df, text_column, entity_dict):
+    # Create a new column with recognized entities
+    df["entities"] = df[text_column].apply(lambda text: ner_on_text(text, entity_dict))
+    return df
+
+
+def classify_sentiment(polarity):
+    # Classify sentiment based on polarity score
+    if polarity > 0.1:
+        return "positive"
+    elif polarity < -0.1:
+        return "negative"
+    else:
+        return "neutral"
+
+
+def ner_with_sentiment(text, entity_dict):
+    # Perform NER with sentiment analysis on a single text
+    entities_with_sentiment = []
+    words = text.split()  # Split text into words
+
+    for word in words:
+        word_lower = word.lower()  # Convert word to lowercase for case-insensitive matching
+        if word_lower in entity_dict:
+            start = text.lower().find(word_lower)  # Find the starting index of the entity
+            end = start + len(word)  # Calculate the ending index of the entity
+
+            # Extract context around the entity for sentiment analysis
+            context = text[max(0, start - 50):min(len(text), end + 50)]
+            sentiment_polarity = TextBlob(context).sentiment.polarity  # Compute sentiment polarity
+            sentiment = classify_sentiment(sentiment_polarity)  # Classify sentiment based on polarity
+
+            entities_with_sentiment.append({
+                "start_char": start,  # Starting character index
+                "end_char": end,  # Ending character index
+                "entity": text[start:end],  # Extracted entity text
+                "label": entity_dict[word_lower],  # Label from the entity dictionary
+                "sentiment": sentiment,  # Sentiment classification
+            })
+
+    return entities_with_sentiment
+
+
+# Apply NER with sentiment analysis to a specific column in a DataFrame
+def ner_with_sentiment_on_dataframe(df, text_column, entity_dict):
+    # Create a new column with recognized entities and their sentiments
+    df["sentiments"] = df[text_column].apply(lambda text: ner_with_sentiment(text, entity_dict))
+    return df
+
+# print('complete')  # Optionally print a completion message

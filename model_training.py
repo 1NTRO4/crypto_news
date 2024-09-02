@@ -1,55 +1,45 @@
-from utils import load_data, preprocess_dataframe, join_tokens, load_json, ner_on_dataframe, classify_sentiment, ner_with_sentiment, ner_with_sentiment_on_dataframe
-
-import json
-import nltk
-from textblob import TextBlob
+from text_processing_utils import load_data, preprocess_dataframe, join_tokens, load_json, ner_on_dataframe, classify_sentiment, ner_with_sentiment, ner_with_sentiment_on_dataframe
+from datasets_preparations import SentimentDataset, TextDataset
 from sklearn.model_selection import train_test_split
-import torch
+from textblob import TextBlob
 from torch.utils.data import Dataset, DataLoader
 from transformers import DistilBertForSequenceClassification, Trainer, TrainingArguments, DistilBertTokenizer, RobertaTokenizer, BertTokenizer, Trainer, TrainingArguments, DistilBertForSequenceClassification, BertForSequenceClassification, RobertaForSequenceClassification
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-import magtplotlib.pyplot as plt
-import numpy as np
 from transformers import Trainer, TrainingArguments, DistilBertForSequenceClassification, BertForSequenceClassification, RobertaForSequenceClassification
+import json
+import nltk
+import torch
+import matplotlib.pyplot as plt
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 import pandas as pd
 import os
 
-# # Download NLTK data --run only once to download packages
-# nltk.download('punkt')
-# nltk.download('stopwords')
-# nltk.download('wordnet')
-# nltk.download('punkt_tab')
 
-df = load_data('data\scraped_news_headline.csv')
-df_preprocesed = preprocess_dataframe(df.copy(), 'headline_news','clean_tokens')
-df_preprocesed['clean_headline'] = df_preprocesed['clean_tokens'].apply(join_tokens)
-df_preprocesed_copy = df_preprocesed
+df = load_data('data\scraped_news_headline.csv') #loading scraped crypto currency news headlines
+df_preprocessed = preprocess_dataframe(df.copy(), 'headline_news','clean_tokens') #preprocessing 
+df_preprocessed['clean_headline'] = df_preprocessed['clean_tokens'].apply(join_tokens) 
+df_preprocessed_copy = df_preprocessed
+
+# Using a manually created dictionary for crpto currency entity recognition
+entity_dict =load_json('AnnotatedDictionary/annotataion_dict.json')
 
 
-# #### Using a manually created dictionary for crpto currency entity recognition
-entity_dict = load_json('AnnotatedDictionary/annotataion_dict.json')
-# SentiCrpyto\AnnotatedDictionary\annotataion_dict.json
-## testing the dictionary for crypto recognition
 ## apply the above function on the clean_headline column to get recognized entities
-df_entities = ner_on_dataframe(df_preprocesed_copy, 'clean_headline', entity_dict)
+df_entities = ner_on_dataframe(df_preprocessed_copy, 'clean_headline', entity_dict)
 df_entities.to_csv('data/recognized_entity_dataset.csv', index= False) ## save the dataframe as a csv file to create a checkpoint
-
 
 # #### Using textblob to get sentiments (Positive,Negative or Neutral) on the recognized entites
 df_with_sentiments = ner_with_sentiment_on_dataframe(df_entities, "clean_headline", entity_dict)
 df_with_sentiments.to_csv('data/entity+sentiment_dataset.csv', index = False) ## save the dataframe as a csv file
 
-
-# Load datasets
-df = load_data('data/entity+sentiment_dataset.csv')
+df = load_data('data/entity+sentiment_dataset.csv') # Load datasets
 entity_dict = load_json('AnnotatedDictionary/annotataion_dict.json')
 
 # Extract necessary columns and convert sentiments to list of dictionaries
 data = df[['clean_headline', 'sentiments']].copy() 
 data['sentiments'] = data['sentiments'].apply(lambda x: json.loads(x.replace("'", "\""))) #changing every single quote to double quote as JSON doesnt recognise single quote
-
 
 # Initialize the DistilBERT tokenizer 
 tokenizer_dict = {
@@ -67,36 +57,10 @@ models = {
     'finbert': ('yiyanghkust/finbert-tone', BertForSequenceClassification)
 }
 
-# Custom dataset class to prepare dataset using PyTorch Dataset class, which provides a standard interface for loading and preprocessing data
-class SentimentDataset(Dataset):
-    def __init__(self, headlines, sentiments, tokenizer):
-        self.headlines = headlines
-        self.sentiments = sentiments
-        self.tokenizer = tokenizer
-
-    def __len__(self):
-        return len(self.headlines)
-
-    def __getitem__(self, idx):
-        tokens = self.tokenizer(self.headlines[idx], padding='max_length', max_length=128, truncation=True, return_tensors="pt")
-        input_ids = tokens['input_ids'].squeeze()
-        attention_mask = tokens['attention_mask'].squeeze()
-        label = self._get_sentiment_label(self.sentiments[idx])
-        return {'input_ids': input_ids, 'attention_mask': attention_mask, 'labels': torch.tensor(label, dtype=torch.long)}
-
-    def _get_sentiment_label(self, sentiments):
-        if any(sent['sentiment'] == 'positive' for sent in sentiments):
-            return 2  # Positive
-        elif any(sent['sentiment'] == 'negative' for sent in sentiments):
-            return 0  # Negative
-        else:
-            return 1  # Neutral
-
 # Prepare data
 train_headlines, val_headlines, train_sentiments, val_sentiments = train_test_split(data['clean_headline'], data['sentiments'], test_size=0.2, random_state=42)
 
-###Models comparison
-def compute_metrics(p):
+def compute_metrics(p): ###Models comparison
     pred, labels = p
     pred = np.argmax(pred, axis=1)
     precision, recall, f1, _ = precision_recall_fscore_support(labels, pred, average='macro')
@@ -179,11 +143,7 @@ for model_name, (train_output, eval_metrics, trainer) in results.items():
 # Create a DataFrame to hold results 
 df_eval = pd.DataFrame(data, columns=['Model', 'Accuracy', 'F1 Score', 'Precision', 'Recall'])
 
-#########################################
-
-# Load dataset for LSTM model
-
-df = load_data('data/entity+sentiment_dataset.csv')
+df = load_data('data/entity+sentiment_dataset.csv') # Load dataset for LSTM model
 entity_dict = load_json('data/annotation_dict.json')
 
 # Extract necessary columns and convert sentiments to list of dictionaries
@@ -204,7 +164,7 @@ vocab = {word: idx for idx, word in enumerate(vocab)}
 def text_to_sequence(text, vocab):
     return [vocab[word] for word in simple_tokenizer(text) if word in vocab]
 
-# Convert the dataset
+# Convert the dataset  to format that can be passed to lstm class
 class TextDataset(Dataset):
     def __init__(self, headlines, sentiments, vocab, max_length=128):
         self.headlines = headlines
