@@ -25,7 +25,7 @@ cd crypto_news
 
 - Create a folder in  `streamlit_app` folder named `saved_models`
 
-- Download the ready finetuned model from [google drive ](https://drive.google.com/drive/folders/1uUW5ftdOXXPz4_g41ijPNkecDOi6GSel?usp=sharing) link into [saved_models](streamlit_app/saved_models/)  folder
+- Download the already fine-tuned model titled `distilbert_class_head` from [google drive ](https://drive.google.com/drive/folders/1uUW5ftdOXXPz4_g41ijPNkecDOi6GSel?usp=sharing) link into [saved_models](streamlit_app/saved_models/)  folder
 
 - Setup a virtual enviroment
 
