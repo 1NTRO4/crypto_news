@@ -1,7 +1,6 @@
 from text_processing_utils import load_data, preprocess_dataframe, join_tokens, load_json, ner_on_dataframe, classify_sentiment, ner_with_sentiment, ner_with_sentiment_on_dataframe
 from datasets_preparations import SentimentDataset, TextDataset
 from sklearn.model_selection import train_test_split
-from textblob import TextBlob
 from torch.utils.data import Dataset, DataLoader
 from transformers import DistilBertForSequenceClassification, Trainer, TrainingArguments, DistilBertTokenizer, RobertaTokenizer, BertTokenizer, Trainer, TrainingArguments, DistilBertForSequenceClassification, BertForSequenceClassification, RobertaForSequenceClassification
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
@@ -30,9 +29,7 @@ entity_dict =load_json('AnnotatedDictionary/annotataion_dict.json')
 df_entities = ner_on_dataframe(df_preprocessed_copy, 'clean_headline', entity_dict)
 df_entities.to_csv('data/recognized_entity_dataset.csv', index= False) ## save the dataframe as a csv file to create a checkpoint
 
-# #### Using textblob to get sentiments (Positive,Negative or Neutral) on the recognized entites
-df_with_sentiments = ner_with_sentiment_on_dataframe(df_entities, "clean_headline", entity_dict)
-df_with_sentiments.to_csv('data/entity+sentiment_dataset.csv', index = False) ## save the dataframe as a csv file
+# ####   manually labeled(Positive,Negative or Neutral) on the recognized entites
 
 df = load_data('data/entity+sentiment_dataset.csv') # Load datasets
 entity_dict = load_json('AnnotatedDictionary/annotataion_dict.json')
