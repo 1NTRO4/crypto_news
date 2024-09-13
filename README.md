@@ -1,13 +1,27 @@
 
 # Sentiment Analysis of Cryptocurrency News Headline using a Fine-Tuned Distilbert Model.
+  
+This project focuses on sentiment analysis of cryptocurrency news by fine-tuning various transformer models, with DistilBERT ultimately being used for the final analysis. The performance of fine-tuned models, including DistilBERT, FinBERT, BERT, and RoBERTa, is compared to an LSTM model, which is also trained for the same task.
 
-    
-## About
-The project intends to do sentiments analysis for crypto-currency news sentiment analysis by finetune DistilBERT and using it for said purpose. Its performanc would also be compared with fintuned versions of FinBERT, BERT, Roberta. LSTM model is also trained to see how it compares to the pre-trained models.
+## Workflow
+Data Collection: News headlines were scraped from selected cryptocurrency-related websites.
 
-After scraping of the news headlines from select crypto-currency related websites. the news headline was preprocessed . A manually annotated dictionary was then used to identify the crypto currencies present before the sentiments in the dataset was manually labeled.
+Data Preprocessing: Headlines were preprocessed, and a manually annotated dictionary was used to identify the specific cryptocurrencies mentioned in the text. Sentiments for the dataset were manually labeled based on the headlines.
 
- DistilBERT performed best here and was then used for sentiment analysis using streamlit web interface.
+Model Training:  The labeled dataset was split into training and test sets. Selected models (DistilBERT, FinBERT, BERT, RoBERTa) were fine-tuned on the training set. An LSTM model was also trained for comparison.
+
+Model Evaluation:
+The performance of each model was evaluated on the test set.
+DistilBERT outperformed the other models and was selected for further analysis.
+
+Deployment: The fine-tuned models are saved in the Streamlit_app/saved_models directory. DistilBERT is used in a Streamlit web interface for real-time sentiment analysis of cryptocurrency news.
+
+Key Features
+Fine-tuning of state-of-the-art transformer models (DistilBERT, FinBERT, BERT, RoBERTa).
+LSTM as a baseline model.
+Manual sentiment labeling and cryptocurrency identification in the dataset.
+Web interface for sentiment analysis using Streamlit.
+
 
 ## Scraping Crypto-currency News Headlines from select sites
 
