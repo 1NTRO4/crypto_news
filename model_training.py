@@ -1,4 +1,4 @@
-from text_processing_utils import load_data, preprocess_dataframe, join_tokens, load_json, ner_on_dataframe, classify_sentiment, ner_with_sentiment, ner_with_sentiment_on_dataframe
+from text_processing_utils import load_data, preprocess_dataframe, join_tokens, load_json, ner_on_dataframe 
 from datasets_preparations import SentimentDataset, TextDataset
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
@@ -29,10 +29,10 @@ entity_dict =load_json('AnnotatedDictionary/annotataion_dict.json')
 df_entities = ner_on_dataframe(df_preprocessed_copy, 'clean_headline', entity_dict)
 df_entities.to_csv('data/recognized_entity_dataset.csv', index= False) ## save the dataframe as a csv file to create a checkpoint
 
+
 # ####   manually labeled(Positive,Negative or Neutral) on the recognized entites
 
 df = load_data('data/entity+sentiment_dataset.csv') # Load datasets
-entity_dict = load_json('AnnotatedDictionary/annotataion_dict.json')
 
 # Extract necessary columns and convert sentiments to list of dictionaries
 data = df[['clean_headline', 'sentiments']].copy() 
@@ -64,10 +64,14 @@ def compute_metrics(p): ###Models comparison
     acc = accuracy_score(labels, pred)
     return {'accuracy': acc, 'f1': f1, 'precision': precision, 'recall': recall}
 
+# a function to train and log the model
 def train_and_log_model(model_name, model_class, train_headlines, val_headlines, train_sentiments, val_sentiments, tokenizer_dict, num_labels=3):
+    
     # load suitable tokenizer
     tokenizer = tokenizer_dict[model_name]
     
+    
+    # creating the dataset 
     train_dataset = SentimentDataset(train_headlines.tolist(), train_sentiments.tolist(), tokenizer)
     val_dataset = SentimentDataset(val_headlines.tolist(), val_sentiments.tolist(), tokenizer)
 
@@ -81,7 +85,7 @@ def train_and_log_model(model_name, model_class, train_headlines, val_headlines,
     # Set up training arguments
     training_args = TrainingArguments(
         output_dir='./results',
-        num_train_epochs=7,  # Increase the number of epochs
+        num_train_epochs=7,  
         per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
         warmup_steps=500,
@@ -89,7 +93,7 @@ def train_and_log_model(model_name, model_class, train_headlines, val_headlines,
         logging_dir='./logs',
         logging_steps=10,
         eval_strategy="epoch",  # Evaluate at the end of each epoch
-        report_to="none",  # Disable logging to external services
+        report_to="none",  
         learning_rate=1e-5  # Set learning rate to 1e-5
     )
 
@@ -140,56 +144,20 @@ for model_name, (train_output, eval_metrics, trainer) in results.items():
 # Create a DataFrame to hold results 
 df_eval = pd.DataFrame(data, columns=['Model', 'Accuracy', 'F1 Score', 'Precision', 'Recall'])
 
-df = load_data('data/entity+sentiment_dataset.csv') # Load dataset for LSTM model
-entity_dict = load_json('data/annotation_dict.json')
+#LSTM 
+def get_lstm_dataset(train_headlines, train_sentiments, test_headlines, test_sentiments):
+   
+    # Build vocabulary
+    vocab = set()
+    for headline in data['clean_headline']:
+        vocab.update(headline.split())
+    vocab = {word: idx for idx, word in enumerate(vocab)}
 
-# Extract necessary columns and convert sentiments to list of dictionaries
-data = df[['clean_headline', 'sentiments']].copy()
-data['sentiments'] = data['sentiments'].apply(lambda x: json.loads(x.replace("'", "\"")))
-
-# Define a simple tokenizer (assuming words are separated by spaces)
-def simple_tokenizer(text):
-    return text.split()
-
-# Build vocabulary
-vocab = set()
-for headline in data['clean_headline']:
-    vocab.update(simple_tokenizer(headline))
-vocab = {word: idx for idx, word in enumerate(vocab)}
-
-# Convert text to sequences of indices
-def text_to_sequence(text, vocab):
-    return [vocab[word] for word in simple_tokenizer(text) if word in vocab]
-
-# Convert the dataset  to format that can be passed to lstm class
-class TextDataset(Dataset):
-    def __init__(self, headlines, sentiments, vocab, max_length=128):
-        self.headlines = headlines
-        self.sentiments = sentiments
-        self.vocab = vocab
-        self.max_length = max_length
-
-    def __len__(self):
-        return len(self.headlines)
-
-    def __getitem__(self, idx):
-        sequence = text_to_sequence(self.headlines[idx], self.vocab)
-        sequence = sequence[:self.max_length] + [0] * (self.max_length - len(sequence))  # Padding
-        label = self._get_sentiment_label(self.sentiments[idx])
-        return {'input_ids': torch.tensor(sequence, dtype=torch.long), 'labels': torch.tensor(label, dtype=torch.long)}
-
-    def _get_sentiment_label(self, sentiments):
-        if any(sent['sentiment'] == 'positive' for sent in sentiments):
-            return 2  # Positive
-        elif any(sent['sentiment'] == 'negative' for sent in sentiments):
-            return 0  # Negative
-        else:
-            return 1  # Neutral
-
-# Prepare data
-train_headlines, val_headlines, train_sentiments, val_sentiments = train_test_split(data['clean_headline'], data['sentiments'], test_size=0.2, random_state=42)
-train_dataset = TextDataset(train_headlines.tolist(), train_sentiments.tolist(), vocab)
-val_dataset = TextDataset(val_headlines.tolist(), val_sentiments.tolist(), vocab)
+   
+    # Prepare data
+    train_dataset = TextDataset(train_headlines.tolist(), train_sentiments.tolist(), vocab)
+    test_dataset = TextDataset(test_headlines.tolist(), test_sentiments.tolist(), vocab)
+    return train_dataset, test_dataset, vocab
 
 # Define the LSTM model
 class LSTMModel(nn.Module):
@@ -258,7 +226,8 @@ def train_model(model, train_dataset, val_dataset, criterion, optimizer, epochs=
     torch.save(model.state_dict(), model_save_path)
 
 # Evaluation function
-def evaluate_model(model, val_loader, criterion):
+def evaluate_model(model, val_dataset, criterion):
+    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
     model.eval()  # Ensure model is in evaluation mode
     total_loss = 0
     all_labels = []
@@ -305,14 +274,16 @@ df_eval = pd.concat([df_eval, new_row], ignore_index=True)
 
 ## plot the results from dataframe and save the output figure 
 def plot_comparison(df, metric, title, ylabel, filename):
+    filename = "results_and_plots/"+ filename
     
     plt.figure(figsize=(8, 4))  
     plt.bar(df['Model'], df[metric])  # Create the bar plot
     plt.title(title)  # Set the title of the plot
     plt.xlabel('Model')  # Set the label for the x-axis
     plt.ylabel(ylabel)  # Set the label for the y-axis
-    plt.savefig(filename)  
-    plt.close()  # Close the figure to avoid display in environments like Jupyter
+    plt.savefig(filename)
+    print(f"Plot of {title} saved to 'results_and_plots/' ")  
+    plt.close() 
 
 ## acc score comparison
 plot_comparison(df_eval, 'Accuracy', 'Model Accuracy Comparison', 'Accuracy', 'acc_score_comparison.png')

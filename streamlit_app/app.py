@@ -36,10 +36,7 @@ def preprocess_text(text):
     return ' '.join(tokens)  # Return the cleaned and tokenized text
 
 def recognize_entities(headline, entity_dict):
-    """
-    Recognize entities from a headline using a predefined dictionary.
-    Returns a list of entities with their corresponding labels.
-    """
+    
     entities = []  # Initialize an empty list for entities
     words = headline.split()  # Split the headline into words
     for word in words:
@@ -49,10 +46,7 @@ def recognize_entities(headline, entity_dict):
     return entities  # Return the list of recognized entities
 
 def predict_sentiment_and_entities(model, tokenizer, entity_dict, headline):
-    """
-    Predict the sentiment of the headline based on recognized entities using the loaded model.
-    Returns a list of results with headline, entities, labels, and predicted sentiment.
-    """
+   
     model.eval()  # Set model to evaluation mode
     results = []  # Initialize a list for storing results
 
