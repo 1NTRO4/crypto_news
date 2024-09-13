@@ -8,7 +8,7 @@ import nltk
 from nltk.corpus import stopwords  
 
 # Load the trained model and tokenizer
-model_path = 'streamlit_app\saved_models\distilbert_class_head'  # Specify the path to your model directory
+model_path = 'streamlit_app/saved_models/distilbert_class_head'  # Specify the path to your model directory
 model = DistilBertForSequenceClassification.from_pretrained(model_path)  # Load the trained DistilBERT model
 tokenizer = DistilBertTokenizer.from_pretrained(model_path)  # Load the tokenizer for the model
 

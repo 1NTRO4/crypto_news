@@ -16,7 +16,7 @@ import pandas as pd
 import os
 
 
-df = load_data('data\scraped_news_headline.csv') #loading scraped crypto currency news headlines
+df = load_data('data/scraped_news_headline.csv') #loading scraped crypto currency news headlines
 df_preprocessed = preprocess_dataframe(df.copy(), 'headline_news','clean_tokens') #preprocessing 
 df_preprocessed['clean_headline'] = df_preprocessed['clean_tokens'].apply(join_tokens) 
 df_preprocessed_copy = df_preprocessed
