@@ -6,11 +6,25 @@ import string
 import json
 from textblob import TextBlob
 
-# Download NLTK data - run only once to download necessary NLTK packages
-# nltk.download('punkt')
-# nltk.download('stopwords')
-# nltk.download('wordnet')
-# nltk.download('punkt_tab')
+# Function to check if the NLTK data is already downloaded
+def download_nltk_data():
+    try:
+        nltk.data.find('tokenizers/punkt')
+        nltk.data.find('corpora/stopwords')
+        nltk.data.find('corpora/wordnet')
+        # nltk.data.find('tokenizers/punkt_tab') # Uncomment if 'punkt_tab' is a custom resource.
+        print("NLTK data already available.")
+    except LookupError:
+        print("Downloading necessary NLTK data...")
+        nltk.download('punkt')
+        nltk.download('stopwords')
+        nltk.download('wordnet')
+        # nltk.download('punkt_tab') # Uncomment if 'punkt_tab' is required
+        print("NLTK data downloaded.")
+
+# initializes NLTK functions
+download_nltk_data()
+
 
 
 def load_data(filename):
