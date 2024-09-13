@@ -2,12 +2,55 @@
 # Sentiment Analysis of Cryptocurrency News Headline using a Fine-Tuned Distilbert Model.
 
     
-
 ## About
-In this Project I intend confirming my hypothesis that distilBERT an optimised version of BERT is best suited for sentiment analysis in Finance with a focus in cryptocurrency based News headline
+The project intends to do sentiments analysis for crypto-currency news sentiment analysis by finetune DistilBERT and using it for said purpose. Its performanc would also be compared with fintuned versions of FinBERT, BERT, Roberta. LSTM model is also trained to see how it compares to the pre-trained models.
 
-I constructed a cryptocurrency based dictionary that is made of the top 200 crypto currencies and their abbreviations according to thier market capitalization. 192 crypto exchanges also made the list. This dictionary was then used to identify crypto currency entities from news headlines datasets and their sentiments determined using. Textblob. DistilBERT,FinBERT, RoBERTa and BERT models were then fine tuned using this dataset with their performance evaluated.  DistilBERT performed best here and was then used for sentiment analysis using streamlit web interface.
+After scraping of the news headlines from select crypto-currency related websites. the news headline was preprocessed . A manually annotated dictionary was then used to identify the crypto currencies present before the sentiments in the dataset was manually labeled.
 
+ DistilBERT performed best here and was then used for sentiment analysis using streamlit web interface.
+
+## Scraping Crypto-currency News Headlines from select sites
+
+ Please follow the steps below in your terminal : 
+
+1. Clone the repo
+
+```
+git clone https://github.com/1NTRO4/crypto_news
+cd crypto_news
+```
+
+2. Run the scrapping_crypto_news.py script
+
+```
+python scrapping_crypto_news.py
+```
+
+
+## Fine tuning the BERT-base models and training LSTM model
+
+ I recommend using a gpu or google colab for model finetuning and training.
+
+ Please follow the steps below: 
+
+1. Clone the repo
+
+```
+!git clone https://github.com/1NTRO4/crypto_news.git
+%cd crypto_news
+```
+
+2. Install the necessary packages
+
+```
+!pip install -r requirements.txt
+```
+
+3.  Run the training_run.py script
+
+```
+!python training_run.py
+```
 
 ## Making Predictions with the Fine-Tuned Model
 
