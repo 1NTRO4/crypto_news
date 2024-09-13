@@ -4,7 +4,6 @@ from nltk.corpus import stopwords
 import re
 import string
 import json
-from textblob import TextBlob
 
 # Function to check if the NLTK data is already downloaded
 def download_nltk_data():
