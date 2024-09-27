@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import re
 import json
-from model_training import clean_preprocess_data
+from text_processing_utils import load_data, preprocess_dataframe, join_tokens, load_json, ner_on_dataframe 
 
 # Function to scrape Crypto Potato headlines with pagination
 def scrape_cryptopotato(base_url, pages):
@@ -200,5 +200,20 @@ with open("AnnotatedDictionary/annotataion_dict.json", "w") as outfile:
     json.dump(annotations, outfile)
 
 print("The annotated dictionary has been saved as :'annotataion_dict.json'")
+
+def clean_preprocess_data(df_path, dictionary_path):
+    df = load_data(df_path) #loading scraped crypto currency news headlines
+    df_preprocessed = preprocess_dataframe(df.copy(), 'headline_news','clean_tokens') #preprocessing 
+    df_preprocessed['clean_headline'] = df_preprocessed['clean_tokens'].apply(join_tokens) 
+    df_preprocessed_copy = df_preprocessed
+
+    # Using a manually created dictionary for crpto currency entity recognition
+    entity_dict =load_json(dictionary_path)
+    
+    ## apply the above function on the clean_headline column to get recognized entities
+    df_entities = ner_on_dataframe(df_preprocessed_copy, 'clean_headline', entity_dict)
+    df_entities.to_csv('data/recognized_entity_dataset.csv', index= False) ## save the dataframe as a csv file to create a checkpoint
+    return df_entities
+
 
 df_processed = clean_preprocess_data(df_path='data/scraped_news_headline.csv', dictionary_path='AnnotatedDictionary/annotataion_dict.json')
