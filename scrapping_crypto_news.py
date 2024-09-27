@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import re
 import json
+from model_training import clean_preprocess_data
 
 # Function to scrape Crypto Potato headlines with pagination
 def scrape_cryptopotato(base_url, pages):
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     # Scrape NewsBTC
     newsbtc_headlines = scrape_newsbtc('https://www.newsbtc.com/')
 
-    cnbc_headlines = scrape_cnbc('cnbc_headlines.csv')
+    cnbc_headlines = scrape_cnbc('data/cnbc_headlines.csv')
 
     # Combine all headlines into one DataFrame
     all_headlines = {
@@ -102,14 +103,14 @@ if __name__ == "__main__":
     headlines_df = pd.DataFrame(all_headlines)
 
     # Save to a CSV file
-    headlines_df.to_csv('combined_crypto_headlines.csv', index=False)
+    headlines_df.to_csv('data/scraped_news_headline.csv', index=False)
 
-    print("All headlines have been scraped and saved to 'combined_crypto_headlines.csv'.")
+    print("All headlines have been scraped and saved to 'data/scraped_news_headline.csv'.")
 
 
 ###############################################
 def get_all_exchanges():
-    base_url = 'https://coinranking.com/exchanges?page='
+    base_url = 'https://coinranking.com/exchanges?page='    
     num_pages = 4  # Number of pages to scrape
     all_exchanges = []
 
@@ -195,7 +196,9 @@ for i in top_cryptocurrencies_symb:
 for company in exchanges:
     annotations[company] = "COMPANY"
 
-with open("data/annotataion_dict.json", "w") as outfile:
+with open("AnnotatedDictionary/annotataion_dict.json", "w") as outfile:
     json.dump(annotations, outfile)
 
 print("The annotated dictionary has been saved as :'annotataion_dict.json'")
+
+df_processed = clean_preprocess_data(df_path='data/scraped_news_headline.csv', dictionary_path='AnnotatedDictionary/annotataion_dict.json')

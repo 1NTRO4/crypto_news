@@ -15,19 +15,19 @@ import torch.optim as optim
 import pandas as pd
 import os
 
+def clean_preprocess_data(df_path, dictionary_path):
+    df = load_data(df_path) #loading scraped crypto currency news headlines
+    df_preprocessed = preprocess_dataframe(df.copy(), 'headline_news','clean_tokens') #preprocessing 
+    df_preprocessed['clean_headline'] = df_preprocessed['clean_tokens'].apply(join_tokens) 
+    df_preprocessed_copy = df_preprocessed
 
-df = load_data('data/scraped_news_headline.csv') #loading scraped crypto currency news headlines
-df_preprocessed = preprocess_dataframe(df.copy(), 'headline_news','clean_tokens') #preprocessing 
-df_preprocessed['clean_headline'] = df_preprocessed['clean_tokens'].apply(join_tokens) 
-df_preprocessed_copy = df_preprocessed
-
-# Using a manually created dictionary for crpto currency entity recognition
-entity_dict =load_json('AnnotatedDictionary/annotataion_dict.json')
-
-
-## apply the above function on the clean_headline column to get recognized entities
-df_entities = ner_on_dataframe(df_preprocessed_copy, 'clean_headline', entity_dict)
-df_entities.to_csv('data/recognized_entity_dataset.csv', index= False) ## save the dataframe as a csv file to create a checkpoint
+    # Using a manually created dictionary for crpto currency entity recognition
+    entity_dict =load_json(dictionary_path)
+    
+    ## apply the above function on the clean_headline column to get recognized entities
+    df_entities = ner_on_dataframe(df_preprocessed_copy, 'clean_headline', entity_dict)
+    df_entities.to_csv('data/recognized_entity_dataset.csv', index= False) ## save the dataframe as a csv file to create a checkpoint
+    return df_entities
 
 
 # ####   manually labeled(Positive,Negative or Neutral) on the recognized entites
