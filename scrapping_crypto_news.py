@@ -1,9 +1,120 @@
 import requests
-from bs4 import BeautifulSoup
-import pandas as pd
 import re
 import json
-from text_processing_utils import load_data, preprocess_dataframe, join_tokens, load_json, ner_on_dataframe 
+import string
+import csv
+import time
+
+import pandas as pd
+
+import nltk
+from nltk.corpus import stopwords
+
+from bs4 import BeautifulSoup
+from textblob import TextBlob
+
+#########################################################################################################
+# Build NLTK Corpus 
+#########################################################################################################
+
+# Function to check if the NLTK data is already downloaded
+def download_nltk_data():
+    try:
+        nltk.data.find('tokenizers/punkt')
+        nltk.data.find('corpora/stopwords')
+        nltk.data.find('corpora/wordnet')
+        # nltk.data.find('tokenizers/punkt_tab') # Uncomment if 'punkt_tab' is a custom resource.
+        print("NLTK data already available.")
+    except LookupError:
+        print("Downloading necessary NLTK data...")
+        nltk.download('punkt')
+        nltk.download('stopwords')
+        nltk.download('wordnet')
+        # nltk.download('punkt_tab') # Uncomment if 'punkt_tab' is required
+        print("NLTK data downloaded.")
+
+# initializes NLTK functions
+download_nltk_data()
+
+
+
+#########################################################################################################
+# Handling Preprocessing 
+#########################################################################################################
+
+def load_data(filename):
+    # Load data from a CSV file into a pandas DataFrame
+    return pd.read_csv(filename)
+
+def load_json(filename):
+    # Load JSON data from a file
+    with open(filename, 'r') as f:
+        entity_dict = json.load(f)
+    return entity_dict
+
+def ner_on_text(text, entity_dict):
+    # Perform Named Entity Recognition (NER) on a single text
+    entities = []
+    words = text.split()  # Split text into words
+
+    for word in words:
+        word_lower = word.lower()  # Convert word to lowercase for case-insensitive matching
+        if word_lower in entity_dict:
+            start = text.lower().find(word_lower)  # Find the starting index of the entity
+            end = start + len(word)  # Calculate the ending index of the entity
+            entities.append({
+                "text": text[start:end],  # Extract the entity text
+                "label": entity_dict[word_lower],  # Get the label from the entity dictionary
+                "start_char": start,  # Starting character index
+                "end_char": end,  # Ending character index
+            })
+
+    return entities
+
+# Clean and tokenize the data
+def preprocess_text(text):
+    # Convert text to lowercase
+    text = text.lower()
+    # Remove punctuation from the text
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    # Remove symbols (except alphanumeric)
+    text = re.sub(r'[^\w]', ' ', text)
+    # Remove numbers from the text
+    text = ''.join([i for i in text if not i.isdigit()])
+    # Remove single characters (e.g., 'k')
+    text = re.sub(r"\b\w\b", "", text)
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    # Remove special characters
+    text = re.sub(r'\W', ' ', text)
+    # Tokenize the text into words
+    tokens = nltk.word_tokenize(text)
+    # Remove stopwords from the list of tokens
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word not in stop_words]
+    return tokens
+
+
+
+# Apply text preprocessing to a specific column in a DataFrame
+def preprocess_dataframe(df, text_column, new_column):
+    # Create a new column with tokenized and cleaned text
+    df[new_column] = df[text_column].apply(preprocess_text)
+    return df
+
+def join_tokens(tokens):
+    # Convert a list of tokens back into a single string
+    return ' '.join(tokens)
+
+# Apply NER to a specific column in a DataFrame
+def ner_on_dataframe(df, text_column, entity_dict):
+    # Create a new column with recognized entities
+    df["entities"] = df[text_column].apply(lambda text: ner_on_text(text, entity_dict))
+    return df
+
+#########################################################################################################
+# Scraping Crypto-News headlines
+#########################################################################################################
 
 # Function to scrape Crypto Potato headlines with pagination
 def scrape_cryptopotato(base_url, pages):
@@ -37,7 +148,7 @@ def scrape_coinjournal(address):
 def scrape_cryptotimes(address):
     request = requests.get(address)
     soup = BeautifulSoup(request.text, 'html.parser')
-    anchor = soup.find_all('a', {"class": 'p-flink'})
+    anchor = soup.find_all('a', {"class": 'p-flink'})# the class fr
 
     headline_news = [headline['title'] for headline in anchor if 'title' in headline.attrs]
     return headline_news
@@ -60,6 +171,43 @@ def get_headline(url):
     return None
 
 # Function to process the file and return a list of headlines
+
+def scrape_cnbc_site():
+    base_url = "https://www.cnbc.com/cryptoworld/"
+
+    # Open a CSV file to write the URLs
+    file = open('data/cnbc_headlines.csv', "w", newline='')
+    writer = csv.writer(file)
+
+    # Write the header to the CSV file
+    writer.writerow(["URL"])
+
+    page_number = 1
+    max_pages = 10  # Set this to the maximum number of pages you want to scrape
+
+    while True:
+        page_to_scrape = requests.get(base_url + f"?page={page_number}")
+        soup = BeautifulSoup(page_to_scrape.text, "html.parser")
+
+        # Find all <a> tags with the class 'RiverCard-mediaContainer'
+        links = soup.find_all("a", class_="RiverCard-mediaContainer")
+
+        if not links or page_number > max_pages:
+            break
+
+        # Extract and write the 'href' attribute from each <a> tag to the CSV file
+        for link in links:
+            url = link.get('href')
+            if url:
+                writer.writerow([url])
+                print(url)
+
+        page_number += 1
+        time.sleep(1)  # Sleep to prevent overwhelming the server (politeness policy)
+
+    # Close the CSV file
+    file.close()
+
 def scrape_cnbc(filename):
     headlines = []
     # Opening and reading the file
@@ -75,8 +223,6 @@ def scrape_cnbc(filename):
                 headlines.append(headline)
     
     return headlines
-
-
 
 
 # Main code to scrape all sites and combine the headlines into one CSV file
@@ -108,7 +254,10 @@ if __name__ == "__main__":
     print("All headlines have been scraped and saved to 'data/scraped_news_headline.csv'.")
 
 
-###############################################
+#########################################################################################################
+# Build Annotation Dictionary
+#########################################################################################################
+
 def get_all_exchanges():
     base_url = 'https://coinranking.com/exchanges?page='    
     num_pages = 4  # Number of pages to scrape
@@ -201,6 +350,11 @@ with open("AnnotatedDictionary/annotataion_dict.json", "w") as outfile:
 
 print("The annotated dictionary has been saved as :'annotataion_dict.json'")
 
+#########################################################################################################
+#  Data Preprocessing 
+#########################################################################################################
+
+#clean and preprocess news headlines, recognize entities in the text using a manually created dictionary, and save the processed data.
 def clean_preprocess_data(df_path, dictionary_path):
     df = load_data(df_path) #loading scraped crypto currency news headlines
     df_preprocessed = preprocess_dataframe(df.copy(), 'headline_news','clean_tokens') #preprocessing 
@@ -215,5 +369,49 @@ def clean_preprocess_data(df_path, dictionary_path):
     df_entities.to_csv('data/recognized_entity_dataset.csv', index= False) ## save the dataframe as a csv file to create a checkpoint
     return df_entities
 
+def classify_sentiment(polarity):
+
+    if polarity > 0.1:
+        return "positive"
+    elif polarity < -0.1:
+        return "negative"
+    else:
+        return "neutral"
+
+def ner_with_sentiment(text, entity_dict):
+   
+    entities_with_sentiment = []
+    words = text.split()  # Split text into words
+
+    for word in words:
+        word_lower = word.lower()  # Convert word to lowercase for case-insensitive matching
+        if word_lower in entity_dict:
+            start = text.lower().find(word_lower)
+            end = start + len(word)
+
+            # Extract context around the entity for sentiment analysis
+            context = text[max(0, start - 50):min(len(text), end + 50)]
+            sentiment_polarity = TextBlob(context).sentiment.polarity
+            sentiment = classify_sentiment(sentiment_polarity)
+
+            entities_with_sentiment.append({
+                "start_char": start,
+                "end_char": end,
+                "entity": text[start:end],
+                "label": entity_dict[word_lower],
+                "sentiment": sentiment,
+            })
+
+    return entities_with_sentiment
+
+def ner_with_sentiment_on_dataframe(df, text_column, entity_dict):
+    
+    df["sentiments"] = df[text_column].apply(lambda text: ner_with_sentiment(text, entity_dict))
+    return df
 
 df_processed = clean_preprocess_data(df_path='data/scraped_news_headline.csv', dictionary_path='AnnotatedDictionary/annotataion_dict.json')
+
+## calling the funtion on clean_headline column
+df_with_sentiments = ner_with_sentiment_on_dataframe(df_processed, "clean_headline",annotations)
+
+df_with_sentiments.to_csv('entity+sentiment_dataset.csv', index = False) ## save the dataframe as a csv file
